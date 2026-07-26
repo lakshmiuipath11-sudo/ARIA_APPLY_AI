@@ -1,27 +1,50 @@
 # ARIA APPLY AI
 
-Hackathon MVP for universal job-application form understanding and assisted
-autofill.
+AI-powered universal job-application assistant with semantic form
+understanding, intelligent autofill, and human-in-the-loop validation.
 
-## Included
+## Live API
 
-- Manifest V3 Chrome/Edge extension
-- React + TypeScript popup and side panel
-- Universal DOM scanner
-- Rule-based browser field extraction
-- FastAPI semantic-mapping backend
-- Optional OpenAI mapping with automatic rule fallback
-- Railway deployment configuration
-- Local candidate profile storage
-- Human review before submission
+```text
+https://ariaapplyai-production.up.railway.app
+```
 
-## Cloud workflow
+Health:
 
-1. Upload this project to a GitHub repository.
-2. Connect that repository to Railway.
-3. Configure the Railway service root directory as `/backend`.
-4. Add `OPENAI_API_KEY` and deploy.
-5. Build the extension using GitHub Codespaces or GitHub Actions.
-6. Download the extension build artifact and load it in Chrome.
+```text
+https://ariaapplyai-production.up.railway.app/api/v1/health
+```
 
-Read `backend/README.md` and `extension/README.md`.
+Swagger:
+
+```text
+https://ariaapplyai-production.up.railway.app/docs
+```
+
+## Build the Chrome extension without VS Code
+
+1. Open the GitHub repository.
+2. Select **Actions**.
+3. Select **Build Chrome Extension**.
+4. Select **Run workflow**.
+5. Download the `aria-apply-ai-extension` artifact.
+6. Extract the ZIP.
+7. Load the extracted folder using `chrome://extensions`.
+
+See `extension/README.md` for full instructions.
+
+## Current workflow
+
+```text
+Job Application Page
+        ↓
+Chrome DOM Scanner
+        ↓
+Railway FastAPI Semantic Mapper
+        ↓
+Canonical Candidate Fields
+        ↓
+Human-reviewed Autofill
+```
+
+ARIA never submits a job application automatically.

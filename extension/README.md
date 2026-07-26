@@ -1,45 +1,61 @@
-# ARIA Apply AI — Sprint 1 Extension Foundation
+# ARIA Apply AI Chrome Extension
 
-This MVP includes:
+This extension is built entirely in GitHub Actions. VS Code and local Node.js
+are not required.
 
-- Chrome/Edge Manifest V3 extension
-- React + TypeScript + Vite
-- Popup UI
-- Side Panel UI
-- Universal visible-field DOM scanner
-- Rule-based semantic field classifier
-- MutationObserver support for dynamic forms
-- Local candidate profile storage
-- Autofill engine with React-compatible native value updates
-- Human review before submission
+## Cloud build
 
-## Run
+1. Upload the repository to GitHub.
+2. Open the repository's **Actions** tab.
+3. Open **Build Chrome Extension**.
+4. Select **Run workflow**.
+5. Wait for the workflow to complete.
+6. Open the successful workflow run.
+7. Download the artifact named:
 
-```bash
-cd extension
-npm install
-npm run build
+```text
+aria-apply-ai-extension
 ```
 
-Then:
+8. Extract the downloaded artifact. It contains:
 
-1. Open `chrome://extensions`.
-2. Enable **Developer mode**.
-3. Select **Load unpacked**.
-4. Choose the generated `extension/dist` folder.
-5. Open a job application page.
-6. Select the ARIA extension and scan the page.
-7. Open the side panel, save a profile, and run autofill.
+```text
+aria-apply-ai-extension.zip
+```
 
-## Current limitations
+9. Extract that ZIP into a folder such as:
 
-- No backend or OpenAI call yet.
-- Resume upload/parsing is not included in Sprint 1.
-- File inputs are detected but never filled automatically.
-- Closed shadow DOM cannot be scanned.
-- Cross-origin iframe fields require additional permissions and frame handling.
-- The extension never submits a form automatically.
+```text
+C:\Users\sony\Desktop\lakshminarayana.eluri\Hackathon\ARIA_EXTENSION
+```
 
-## Next sprint
+10. Open Chrome:
 
-Add FastAPI, OpenAI semantic mapping, resume parsing, and confidence-based human approval.
+```text
+chrome://extensions
+```
+
+11. Enable **Developer mode**.
+12. Select **Load unpacked**.
+13. Choose the extracted `ARIA_EXTENSION` folder containing `manifest.json`.
+
+## Live backend
+
+The default backend is already configured as:
+
+```text
+https://ariaapplyai-production.up.railway.app
+```
+
+## Test flow
+
+1. Open a job application page.
+2. Open ARIA's side panel.
+3. Select **Test Railway Backend**.
+4. Select **Scan Page**.
+5. Select **Run Semantic Mapping**.
+6. Enter or save a candidate profile.
+7. Select **Autofill Fields**.
+8. Review all values manually.
+
+ARIA never submits an application automatically.

@@ -5,6 +5,7 @@ import { emptyProfile, getProfile, saveProfile } from "../storage/profileStorage
 import { autofillActivePage, scanActivePage } from "../services/tabService";
 import {
   getApiBaseUrl,
+  healthCheck,
   mapFieldsWithBackend,
   saveApiBaseUrl
 } from "../services/apiClient";
@@ -39,6 +40,23 @@ function SidePanel() {
       setStatus(`${result.fields.length} visible fields detected.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Scan failed.");
+    }
+  };
+
+  const testBackend = async () => {
+    try {
+      setStatus("Testing Railway backend...");
+      await saveApiBaseUrl(apiUrl);
+      const healthy = await healthCheck();
+      setStatus(
+        healthy
+          ? "Railway backend is online."
+          : "Railway backend health check failed."
+      );
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Backend test failed."
+      );
     }
   };
 
@@ -110,6 +128,7 @@ function SidePanel() {
       <textarea value={profile.skills} onChange={e => update("skills", e.target.value)} />
 
       <button className="secondary" onClick={save}>Save Settings</button>
+      <button className="secondary" onClick={testBackend}>Test Railway Backend</button>
       <button className="secondary" onClick={scanPage}>1. Scan Page</button>
       <button className="secondary" onClick={runAiMapping}>2. Run Semantic Mapping</button>
       <button className="primary" onClick={fill}>3. Autofill Fields</button>
