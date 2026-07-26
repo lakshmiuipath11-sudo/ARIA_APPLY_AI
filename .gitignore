@@ -1,0 +1,18 @@
+# Node
+node_modules/
+extension/dist/
+
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+backend/.env
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
