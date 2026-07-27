@@ -17,12 +17,13 @@
 }
 
 .aria-candidate-list {
-  max-height: 260px;
+  max-height: 275px;
   display: flex;
   flex-direction: column;
   gap: 9px;
   overflow-y: auto;
-  padding-right: 3px;
+  overflow-x: visible;
+  padding: 2px 4px 2px 1px;
 }
 
 .aria-candidate-list::-webkit-scrollbar {
@@ -35,16 +36,12 @@
 }
 
 .aria-candidate-card {
+  position: relative;
   width: 100%;
   min-height: 76px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   border: 1px solid #223a57;
   border-radius: 13px;
-  padding: 11px;
   color: #f8fafc;
-  text-align: left;
   background: rgba(7, 23, 42, 0.86);
   transition:
     border-color 0.2s ease,
@@ -66,7 +63,24 @@
       rgba(79, 70, 229, 0.28),
       rgba(61, 40, 120, 0.2)
     );
-  box-shadow: 0 0 0 2px rgba(117, 104, 255, 0.12);
+  box-shadow:
+    0 0 0 2px
+      rgba(117, 104, 255, 0.12);
+}
+
+.aria-candidate-main {
+  width: 100%;
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 13px;
+  padding: 11px 45px 11px 11px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
 }
 
 .aria-avatar {
@@ -118,8 +132,93 @@
   place-items: center;
   flex: 0 0 27px;
   border-radius: 50%;
+  color: transparent;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.aria-selection-check-active {
   color: #d9ffe5;
-  background: rgba(34, 197, 94, 0.17);
+  background: rgba(34, 197, 94, 0.23);
+}
+
+.aria-card-menu-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  padding: 0;
+  color: #cbd5e1;
+  font-size: 21px;
+  line-height: 1;
+  background: rgba(17, 36, 61, 0.95);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.86);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    background 0.18s ease;
+  z-index: 4;
+}
+
+.aria-candidate-card:hover
+.aria-card-menu-button,
+.aria-card-menu-button[aria-expanded="true"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.aria-card-menu-button:hover {
+  color: #ffffff;
+  background: #334155;
+}
+
+.aria-profile-menu {
+  position: absolute;
+  top: 42px;
+  right: 8px;
+  width: 165px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  border-radius: 11px;
+  background: #071321;
+  box-shadow:
+    0 18px 38px
+      rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  animation:
+    aria-menu-open 0.16s ease;
+}
+
+.aria-profile-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  padding: 11px 13px;
+  color: #e5edf8;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.aria-profile-menu button:hover {
+  background: #172554;
+}
+
+.aria-profile-menu-danger {
+  color: #ff9999 !important;
+}
+
+.aria-profile-menu-danger:hover {
+  background:
+    rgba(127, 29, 29, 0.55) !important;
 }
 
 .aria-add-resume-button {
@@ -134,4 +233,152 @@
 
 .aria-add-resume-button:hover {
   color: #d4d0ff;
+}
+
+.aria-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background:
+    rgba(1, 8, 18, 0.78);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+}
+
+.aria-confirm-dialog {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #334155;
+  border-radius: 17px;
+  padding: 22px;
+  color: #f8fafc;
+  text-align: center;
+  background:
+    linear-gradient(
+      180deg,
+      #10233e,
+      #071321
+    );
+  box-shadow:
+    0 25px 60px
+      rgba(0, 0, 0, 0.55);
+  animation:
+    aria-dialog-open 0.2s ease;
+}
+
+.aria-delete-dialog-icon {
+  width: 57px;
+  height: 57px;
+  display: grid;
+  place-items: center;
+  border: 1px solid
+    rgba(248, 113, 113, 0.45);
+  border-radius: 50%;
+  font-size: 25px;
+  background:
+    rgba(127, 29, 29, 0.32);
+}
+
+.aria-confirm-dialog h2 {
+  margin: 3px 0 0;
+  color: #ffffff;
+  font-size: 20px;
+}
+
+.aria-confirm-dialog p {
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.aria-confirm-dialog small {
+  max-width: 100%;
+  overflow: hidden;
+  color: #8fa2b8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aria-delete-warning {
+  color: #fca5a5 !important;
+  font-size: 12px;
+}
+
+.aria-dialog-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 9px;
+  margin-top: 9px;
+}
+
+.aria-dialog-actions button {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aria-dialog-cancel {
+  border: 1px solid #475569;
+  color: #dbe5f2;
+  background: #172337;
+}
+
+.aria-dialog-cancel:hover {
+  background: #26364e;
+}
+
+.aria-dialog-delete {
+  border: 1px solid #ef4444;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      90deg,
+      #dc2626,
+      #ef4444
+    );
+}
+
+.aria-dialog-delete:hover {
+  filter: brightness(1.08);
+}
+
+@keyframes aria-menu-open {
+  from {
+    opacity: 0;
+    transform:
+      translateY(-5px)
+      scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+@keyframes aria-dialog-open {
+  from {
+    opacity: 0;
+    transform:
+      translateY(8px)
+      scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
 }
