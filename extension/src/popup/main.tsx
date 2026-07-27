@@ -1,22 +1,18 @@
 import React, {
   ChangeEvent,
-  MouseEvent,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from "react";
 
 import { createRoot } from "react-dom/client";
 
 import type {
-  ScanResult,
   StoredCandidate
 } from "../types";
 
 import {
   addCandidate,
-  deleteCandidate,
   getCandidates,
   getSelectedCandidate,
   selectCandidate
@@ -76,20 +72,8 @@ function Popup() {
   const [candidates, setCandidates] =
     useState<StoredCandidate[]>([]);
 
-  const [
-    selectedCandidateId,
-    setSelectedCandidateId
-  ] = useState("");
-
-  const [
-    openMenuCandidateId,
-    setOpenMenuCandidateId
-  ] = useState("");
-
-  const [
-    deleteCandidateTarget,
-    setDeleteCandidateTarget
-  ] = useState<StoredCandidate | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] =
+    useState("");
 
   const [processedCount, setProcessedCount] =
     useState(0);
@@ -109,46 +93,10 @@ function Popup() {
   const [errorMessage, setErrorMessage] =
     useState("");
 
-  const popupRef =
-    useRef<HTMLElement | null>(null);
-
   const greeting = getGreeting();
 
   useEffect(() => {
     void initializePopup();
-  }, []);
-
-  useEffect(() => {
-    function closeMenuWhenClickingOutside(
-      event: globalThis.MouseEvent
-    ): void {
-      const target = event.target;
-
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      if (
-        target.closest(".aria-profile-menu") ||
-        target.closest(".aria-card-menu-button")
-      ) {
-        return;
-      }
-
-      setOpenMenuCandidateId("");
-    }
-
-    document.addEventListener(
-      "click",
-      closeMenuWhenClickingOutside
-    );
-
-    return () => {
-      document.removeEventListener(
-        "click",
-        closeMenuWhenClickingOutside
-      );
-    };
   }, []);
 
   async function initializePopup(): Promise<void> {
@@ -190,20 +138,7 @@ function Popup() {
 
   function showError(message: string): void {
     setErrorMessage(message);
-    setOpenMenuCandidateId("");
-    setDeleteCandidateTarget(null);
     setStage("error");
-  }
-
-  async function refreshCandidates(): Promise<
-    StoredCandidate[]
-  > {
-    const updatedCandidates =
-      await getCandidates();
-
-    setCandidates(updatedCandidates);
-
-    return updatedCandidates;
   }
 
   async function handleResumeUpload(
@@ -217,24 +152,20 @@ function Popup() {
       return;
     }
 
-    const supportedFiles =
-      files.filter(file => {
-        const name =
-          file.name.toLowerCase();
+    const supportedFiles = files.filter(file => {
+      const name = file.name.toLowerCase();
 
-        return (
-          name.endsWith(".pdf") ||
-          name.endsWith(".docx") ||
-          name.endsWith(".txt")
-        );
-      });
+      return (
+        name.endsWith(".pdf") ||
+        name.endsWith(".docx") ||
+        name.endsWith(".txt")
+      );
+    });
 
     if (supportedFiles.length === 0) {
       showError(
         "Please upload PDF, DOCX, or TXT resumes."
       );
-
-      event.target.value = "";
       return;
     }
 
@@ -244,15 +175,18 @@ function Popup() {
     setStage("processing");
 
     try {
+      const newlyCreated:
+      StoredCandidate[] = [];
+
       for (
         let index = 0;
         index < supportedFiles.length;
         index += 1
       ) {
-        const file =
-          supportedFiles[index];
+        const file = supportedFiles[index];
 
         setActiveStep(0);
+
         await wait(300);
 
         setActiveStep(1);
@@ -261,14 +195,19 @@ function Popup() {
           await extractResumeProfile(file);
 
         await wait(300);
+
         setActiveStep(2);
 
-        await addCandidate(
-          extractedProfile,
-          file.name
-        );
+        const candidate =
+          await addCandidate(
+            extractedProfile,
+            file.name
+          );
+
+        newlyCreated.push(candidate);
 
         await wait(300);
+
         setActiveStep(3);
 
         setProcessedCount(index + 1);
@@ -277,7 +216,9 @@ function Popup() {
       }
 
       const allCandidates =
-        await refreshCandidates();
+        await getCandidates();
+
+      setCandidates(allCandidates);
 
       if (allCandidates.length === 1) {
         await selectCandidate(
@@ -312,7 +253,6 @@ function Popup() {
       await selectCandidate(candidateId);
 
       setSelectedCandidateId(candidateId);
-      setOpenMenuCandidateId("");
     } catch (error) {
       showError(
         error instanceof Error
@@ -322,89 +262,11 @@ function Popup() {
     }
   }
 
-  function toggleCandidateMenu(
-    event: MouseEvent<HTMLButtonElement>,
-    candidateId: string
-  ): void {
-    event.stopPropagation();
-
-    setOpenMenuCandidateId(currentId =>
-      currentId === candidateId
-        ? ""
-        : candidateId
-    );
-  }
-
-  function requestCandidateDelete(
-    event: MouseEvent<HTMLButtonElement>,
-    candidate: StoredCandidate
-  ): void {
-    event.stopPropagation();
-
-    setOpenMenuCandidateId("");
-    setDeleteCandidateTarget(candidate);
-  }
-
-  async function confirmCandidateDelete():
-  Promise<void> {
-    if (!deleteCandidateTarget) {
-      return;
-    }
-
-    try {
-      const deletedId =
-        deleteCandidateTarget.id;
-
-      await deleteCandidate(deletedId);
-
-      const remainingCandidates =
-        await refreshCandidates();
-
-      setDeleteCandidateTarget(null);
-
-      if (remainingCandidates.length === 0) {
-        setSelectedCandidateId("");
-        setStage("welcome");
-        return;
-      }
-
-      const selectedStillExists =
-        remainingCandidates.some(
-          candidate =>
-            candidate.id ===
-            selectedCandidateId
-        );
-
-      if (
-        deletedId === selectedCandidateId ||
-        !selectedStillExists
-      ) {
-        const nextCandidate =
-          remainingCandidates[0];
-
-        await selectCandidate(
-          nextCandidate.id
-        );
-
-        setSelectedCandidateId(
-          nextCandidate.id
-        );
-      }
-    } catch (error) {
-      showError(
-        error instanceof Error
-          ? error.message
-          : "ARIA could not delete this resume."
-      );
-    }
-  }
-
   async function applyWithAria(): Promise<void> {
     const selectedCandidate =
       candidates.find(
         candidate =>
-          candidate.id ===
-          selectedCandidateId
+          candidate.id === selectedCandidateId
       );
 
     if (!selectedCandidate) {
@@ -414,7 +276,6 @@ function Popup() {
       return;
     }
 
-    setOpenMenuCandidateId("");
     setActiveStep(0);
     setConfidence(0);
     setFilledCount(0);
@@ -431,47 +292,12 @@ function Popup() {
       setActiveStep(2);
 
       const semanticResult =
-        await mapFieldsWithBackend(
-          pageScan
-        );
-
-      const mappingById = new Map(
-        semanticResult.mappings.map(
-          mapping => [
-            mapping.id,
-            mapping
-          ]
-        )
-      );
-
-      const enrichedScan: ScanResult = {
-        ...pageScan,
-        fields: pageScan.fields.map(
-          field => {
-            const mapping =
-              mappingById.get(field.id);
-
-            if (!mapping) {
-              return field;
-            }
-
-            return {
-              ...field,
-              canonicalField:
-                mapping.canonicalField as
-                  typeof field.canonicalField,
-              confidence:
-                mapping.confidence
-            };
-          }
-        )
-      };
+        await mapFieldsWithBackend(pageScan);
 
       const validMappings =
         semanticResult.mappings.filter(
           mapping =>
-            mapping.canonicalField !==
-            "unknown"
+            mapping.canonicalField !== "unknown"
         );
 
       const averageConfidence =
@@ -494,8 +320,7 @@ function Popup() {
 
       const count =
         await autofillActivePage(
-          selectedCandidate.profile,
-          enrichedScan
+          selectedCandidate.profile
         );
 
       setFilledCount(count);
@@ -563,16 +388,14 @@ function Popup() {
   ProgressStep[] = useMemo(
     () => [
       {
-        label:
-          "Loading Candidate Profile",
+        label: "Loading Candidate Profile",
         state:
           activeStep > 0
             ? "complete"
             : "active"
       },
       {
-        label:
-          "Understanding Job Form",
+        label: "Understanding Job Form",
         state:
           activeStep > 1
             ? "complete"
@@ -581,8 +404,7 @@ function Popup() {
               : "waiting"
       },
       {
-        label:
-          "Matching Candidate Details",
+        label: "Matching Candidate Details",
         state:
           activeStep > 2
             ? "complete"
@@ -591,8 +413,7 @@ function Popup() {
               : "waiting"
       },
       {
-        label:
-          "Completing Application",
+        label: "Completing Application",
         state:
           activeStep > 3
             ? "complete"
@@ -607,15 +428,11 @@ function Popup() {
   const selectedCandidate =
     candidates.find(
       candidate =>
-        candidate.id ===
-        selectedCandidateId
+        candidate.id === selectedCandidateId
     );
 
   return (
-    <main
-      className="aria-popup-shell"
-      ref={popupRef}
-    >
+    <main className="aria-popup-shell">
       <section className="aria-agent-card">
         <AgentHeader />
 
@@ -677,24 +494,26 @@ function Popup() {
         )}
 
         {stage === "processing" && (
-          <AgentProgress
-            steps={processingSteps}
-            confidence={
-              totalFiles > 0
-                ? Math.round(
-                    (
-                      processedCount /
-                      totalFiles
-                    ) * 100
-                  )
-                : 0
-            }
-            message={
-              totalFiles > 1
-                ? `Processed ${processedCount} of ${totalFiles} resumes`
-                : "ARIA is preparing the candidate profile..."
-            }
-          />
+          <>
+            <AgentProgress
+              steps={processingSteps}
+              confidence={
+                totalFiles > 0
+                  ? Math.round(
+                      (
+                        processedCount /
+                        totalFiles
+                      ) * 100
+                    )
+                  : 0
+              }
+              message={
+                totalFiles > 1
+                  ? `Processed ${processedCount} of ${totalFiles} resumes`
+                  : "ARIA is preparing the candidate profile..."
+              }
+            />
+          </>
         )}
 
         {stage === "setup-complete" && (
@@ -735,12 +554,9 @@ function Popup() {
                   candidate.id ===
                   selectedCandidateId;
 
-                const menuOpen =
-                  candidate.id ===
-                  openMenuCandidateId;
-
                 return (
-                  <article
+                  <button
+                    type="button"
                     className={[
                       "aria-candidate-card",
                       selected
@@ -748,123 +564,50 @@ function Popup() {
                         : ""
                     ].join(" ")}
                     key={candidate.id}
+                    onClick={() => {
+                      void chooseCandidate(
+                        candidate.id
+                      );
+                    }}
                   >
-                    <button
-                      type="button"
-                      className="aria-candidate-main"
-                      onClick={() => {
-                        void chooseCandidate(
-                          candidate.id
-                        );
-                      }}
-                    >
-                      <span className="aria-avatar">
-                        {candidate.initials}
-                      </span>
+                    <span className="aria-avatar">
+                      {candidate.initials}
+                    </span>
 
-                      <span className="aria-candidate-info">
-                        <strong>
-                          {
-                            candidate.displayName
-                          }
-                        </strong>
+                    <span className="aria-candidate-info">
+                      <strong>
+                        {candidate.displayName}
+                      </strong>
 
-                        {candidate.profile
-                          .designation && (
-                          <small>
-                            {
-                              candidate.profile
-                                .designation
-                            }
-                          </small>
-                        )}
-
+                      {candidate.profile
+                        .designation && (
                         <small>
                           {
-                            candidate
-                              .resumeFileName
+                            candidate.profile
+                              .designation
                           }
                         </small>
-                      </span>
+                      )}
 
-                      <span
-                        className={[
-                          "aria-selection-check",
-                          selected
-                            ? "aria-selection-check-active"
-                            : ""
-                        ].join(" ")}
-                      >
-                        {selected ? "✓" : ""}
-                      </span>
-                    </button>
+                      <small>
+                        {
+                          candidate.resumeFileName
+                        }
+                      </small>
+                    </span>
 
-                    <button
-                      type="button"
-                      className="aria-card-menu-button"
-                      title="Profile options"
-                      aria-label={
-                        `Options for ${candidate.displayName}`
-                      }
-                      aria-expanded={menuOpen}
-                      onClick={event => {
-                        toggleCandidateMenu(
-                          event,
-                          candidate.id
-                        );
-                      }}
-                    >
-                      ⋮
-                    </button>
-
-                    {menuOpen && (
-                      <div
-                        className="aria-profile-menu"
-                        role="menu"
-                      >
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={event => {
-                            event.stopPropagation();
-
-                            void chooseCandidate(
-                              candidate.id
-                            );
-                          }}
-                        >
-                          <span>✓</span>
-                          Select Profile
-                        </button>
-
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="aria-profile-menu-danger"
-                          onClick={event => {
-                            requestCandidateDelete(
-                              event,
-                              candidate
-                            );
-                          }}
-                        >
-                          <span>🗑</span>
-                          Delete Resume
-                        </button>
-                      </div>
-                    )}
-                  </article>
+                    <span className="aria-selection-check">
+                      {selected ? "✓" : ""}
+                    </span>
+                  </button>
                 );
               })}
             </div>
 
             <button
-              type="button"
               className="aria-primary-button aria-apply-button"
               disabled={!selectedCandidate}
-              onClick={() => {
-                void applyWithAria();
-              }}
+              onClick={applyWithAria}
             >
               <span>✦</span>
               Apply with ARIA
@@ -936,7 +679,6 @@ function Popup() {
             </p>
 
             <button
-              type="button"
               className="aria-primary-button"
               onClick={reviewApplication}
             >
@@ -957,7 +699,6 @@ function Popup() {
             <p>{errorMessage}</p>
 
             <button
-              type="button"
               className="aria-primary-button"
               onClick={() => {
                 setErrorMessage("");
@@ -972,74 +713,6 @@ function Popup() {
               Try Again
             </button>
           </section>
-        )}
-
-        {deleteCandidateTarget && (
-          <div
-            className="aria-modal-backdrop"
-            role="presentation"
-          >
-            <section
-              className="aria-confirm-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="aria-delete-title"
-            >
-              <div className="aria-delete-dialog-icon">
-                🗑
-              </div>
-
-              <h2 id="aria-delete-title">
-                Delete Resume?
-              </h2>
-
-              <p>
-                Remove{" "}
-                <strong>
-                  {
-                    deleteCandidateTarget
-                      .displayName
-                  }
-                </strong>
-                ?
-              </p>
-
-              <small>
-                {
-                  deleteCandidateTarget
-                    .resumeFileName
-                }
-              </small>
-
-              <p className="aria-delete-warning">
-                This action cannot be undone.
-              </p>
-
-              <div className="aria-dialog-actions">
-                <button
-                  type="button"
-                  className="aria-dialog-cancel"
-                  onClick={() => {
-                    setDeleteCandidateTarget(
-                      null
-                    );
-                  }}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  className="aria-dialog-delete"
-                  onClick={() => {
-                    void confirmCandidateDelete();
-                  }}
-                >
-                  Delete Resume
-                </button>
-              </div>
-            </section>
-          </div>
         )}
       </section>
     </main>
@@ -1106,13 +779,9 @@ function AgentProgress({
 
       <div className="aria-confidence-section">
         <div className="aria-confidence-heading">
-          <span>
-            ✦ AI Confidence
-          </span>
+          <span>✦ AI Confidence</span>
 
-          <strong>
-            {confidence}%
-          </strong>
+          <strong>{confidence}%</strong>
         </div>
 
         <div className="aria-progress-track">
