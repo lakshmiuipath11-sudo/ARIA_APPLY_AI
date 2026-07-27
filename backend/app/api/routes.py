@@ -30,8 +30,12 @@ async def semantic_map(
     request: SemanticMapRequest,
     settings: Settings = Depends(get_settings),
 ) -> SemanticMapResponse:
+<<<<<<< HEAD
     mapper = GeminiSemanticMapper(settings)
 
+=======
+  mapper = GeminiSemanticMapper(settings)
+>>>>>>> origin/main
     return await mapper.map_fields(request)
 
 
