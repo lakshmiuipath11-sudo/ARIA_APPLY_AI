@@ -26,7 +26,7 @@ Health endpoint:
 https://YOUR-RAILWAY-DOMAIN/api/v1/health
 ```
 
-Interactive API documentation:
+Interactive API documentation: 
 
 ```text
 https://YOUR-RAILWAY-DOMAIN/docs
