@@ -72,3 +72,12 @@ export interface CandidateProfile {
   // Sprint 4
   resume: string;
 }
+export interface StoredCandidate {
+  id: string;
+  displayName: string;
+  initials: string;
+  resumeFileName: string;
+  createdAt: string;
+  updatedAt: string;
+  profile: CandidateProfile;
+}
