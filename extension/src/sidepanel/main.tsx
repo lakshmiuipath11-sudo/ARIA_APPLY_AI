@@ -49,21 +49,31 @@ function SidePanel() {
     useState("");
 
   const [status, setStatus] =
-    useState("Load or enter your candidate profile.");
+    useState(
+      "Load or enter your candidate profile."
+    );
 
   useEffect(() => {
     void loadInitialData();
   }, []);
 
   async function loadInitialData(): Promise<void> {
-    const [storedProfile, storedApiUrl] =
-      await Promise.all([
-        getProfile(),
-        getApiBaseUrl()
-      ]);
+    try {
+      const [storedProfile, storedApiUrl] =
+        await Promise.all([
+          getProfile(),
+          getApiBaseUrl()
+        ]);
 
-    setProfile(storedProfile);
-    setApiUrl(storedApiUrl);
+      setProfile(storedProfile);
+      setApiUrl(storedApiUrl);
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Unable to load saved settings."
+      );
+    }
   }
 
   function updateProfile(
@@ -120,12 +130,15 @@ function SidePanel() {
   function selectResume(
     event: ChangeEvent<HTMLInputElement>
   ): void {
-    const file = event.target.files?.[0] ?? null;
+    const file =
+      event.target.files?.[0] ?? null;
 
     setSelectedResume(file);
 
     if (file) {
-      setStatus(`Selected resume: ${file.name}`);
+      setStatus(
+        `Selected resume: ${file.name}`
+      );
     }
   }
 
@@ -145,7 +158,9 @@ function SidePanel() {
       await saveApiBaseUrl(apiUrl);
 
       const extractedProfile =
-        await extractResumeProfile(selectedResume);
+        await extractResumeProfile(
+          selectedResume
+        );
 
       const mergedProfile: CandidateProfile = {
         ...emptyProfile,
@@ -161,7 +176,7 @@ function SidePanel() {
       await saveProfile(mergedProfile);
 
       setStatus(
-        "Resume extracted successfully. Review the profile before autofill."
+        "Resume extracted successfully. Review and save the profile."
       );
     } catch (error) {
       setStatus(
@@ -176,7 +191,8 @@ function SidePanel() {
     try {
       setStatus("Scanning current page...");
 
-      const result = await scanActivePage();
+      const result =
+        await scanActivePage();
 
       setScan(result);
       setMappingSource("");
@@ -205,38 +221,46 @@ function SidePanel() {
         scan ?? await scanActivePage();
 
       const semanticResult =
-        await mapFieldsWithBackend(currentScan);
+        await mapFieldsWithBackend(
+          currentScan
+        );
 
       const mappingById = new Map(
-        semanticResult.mappings.map(mapping => [
-          mapping.id,
-          mapping
-        ])
+        semanticResult.mappings.map(
+          mapping => [
+            mapping.id,
+            mapping
+          ]
+        )
       );
 
       const enrichedScan: ScanResult = {
         ...currentScan,
-        fields: currentScan.fields.map(field => {
-          const mapping =
-            mappingById.get(field.id);
+        fields: currentScan.fields.map(
+          field => {
+            const mapping =
+              mappingById.get(field.id);
 
-          if (!mapping) {
-            return field;
+            if (!mapping) {
+              return field;
+            }
+
+            return {
+              ...field,
+              canonicalField:
+                mapping.canonicalField as
+                  typeof field.canonicalField,
+              confidence:
+                mapping.confidence
+            };
           }
-
-          return {
-            ...field,
-            canonicalField:
-              mapping.canonicalField as
-                typeof field.canonicalField,
-            confidence:
-              mapping.confidence
-          };
-        })
+        )
       };
 
       setScan(enrichedScan);
-      setMappingSource(semanticResult.source);
+      setMappingSource(
+        semanticResult.source
+      );
 
       setStatus(
         semanticResult.source === "ai"
@@ -271,24 +295,116 @@ function SidePanel() {
     }
   }
 
+  async function applyWithAria(): Promise<void> {
+    try {
+      setStatus(
+        "Saving candidate profile..."
+      );
+
+      await Promise.all([
+        saveProfile(profile),
+        saveApiBaseUrl(apiUrl)
+      ]);
+
+      setStatus(
+        "Scanning job application..."
+      );
+
+      const currentScan =
+        await scanActivePage();
+
+      setScan(currentScan);
+
+      setStatus(
+        "Understanding form fields..."
+      );
+
+      const semanticResult =
+        await mapFieldsWithBackend(
+          currentScan
+        );
+
+      const mappingById = new Map(
+        semanticResult.mappings.map(
+          mapping => [
+            mapping.id,
+            mapping
+          ]
+        )
+      );
+
+      const enrichedScan: ScanResult = {
+        ...currentScan,
+        fields: currentScan.fields.map(
+          field => {
+            const mapping =
+              mappingById.get(field.id);
+
+            if (!mapping) {
+              return field;
+            }
+
+            return {
+              ...field,
+              canonicalField:
+                mapping.canonicalField as
+                  typeof field.canonicalField,
+              confidence:
+                mapping.confidence
+            };
+          }
+        )
+      };
+
+      setScan(enrichedScan);
+      setMappingSource(
+        semanticResult.source
+      );
+
+      setStatus(
+        "Autofilling application..."
+      );
+
+      const filledCount =
+        await autofillActivePage(profile);
+
+      setStatus(
+        `${filledCount} fields filled successfully. Review all values before submitting.`
+      );
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "ARIA application flow failed."
+      );
+    }
+  }
+
   return (
     <main className="app">
       <section className="card">
         <h1>ARIA Side Panel</h1>
 
         <p>
-          Upload your resume, review the extracted
-          profile, scan the form, and autofill.
-          ARIA never submits automatically.
+          Upload your resume, review your
+          candidate profile, scan the job form,
+          and autofill it. ARIA never submits
+          automatically.
         </p>
 
-        <label>Railway backend URL</label>
+        <label>
+          Railway backend URL
+        </label>
 
         <input
           value={apiUrl}
-          placeholder="https://ariaapplyai-production.up.railway.app"
+          placeholder={
+            "https://ariaapplyai-production.up.railway.app"
+          }
           onChange={event =>
-            setApiUrl(event.target.value)
+            setApiUrl(
+              event.target.value
+            )
           }
         />
 
@@ -303,7 +419,9 @@ function SidePanel() {
       <section className="card">
         <h2>Resume Extraction</h2>
 
-        <label>Choose Resume</label>
+        <label>
+          Choose Resume
+        </label>
 
         <input
           type="file"
@@ -321,7 +439,8 @@ function SidePanel() {
 
         {selectedResume && (
           <div className="status">
-            Selected: {selectedResume.name}
+            Selected:{" "}
+            {selectedResume.name}
           </div>
         )}
       </section>
@@ -330,6 +449,7 @@ function SidePanel() {
         <h2>Candidate Profile</h2>
 
         <label>First name</label>
+
         <input
           value={profile.firstName}
           onChange={event =>
@@ -341,6 +461,7 @@ function SidePanel() {
         />
 
         <label>Last name</label>
+
         <input
           value={profile.lastName}
           onChange={event =>
@@ -352,6 +473,7 @@ function SidePanel() {
         />
 
         <label>Full name</label>
+
         <input
           value={profile.fullName}
           onChange={event =>
@@ -363,6 +485,7 @@ function SidePanel() {
         />
 
         <label>Email</label>
+
         <input
           type="email"
           value={profile.email}
@@ -375,6 +498,7 @@ function SidePanel() {
         />
 
         <label>Phone</label>
+
         <input
           value={profile.phone}
           onChange={event =>
@@ -386,6 +510,7 @@ function SidePanel() {
         />
 
         <label>City</label>
+
         <input
           value={profile.city}
           onChange={event =>
@@ -397,6 +522,7 @@ function SidePanel() {
         />
 
         <label>Country</label>
+
         <input
           value={profile.country}
           onChange={event =>
@@ -408,6 +534,7 @@ function SidePanel() {
         />
 
         <label>LinkedIn</label>
+
         <input
           value={profile.linkedin}
           onChange={event =>
@@ -419,6 +546,7 @@ function SidePanel() {
         />
 
         <label>GitHub</label>
+
         <input
           value={profile.github}
           onChange={event =>
@@ -430,6 +558,7 @@ function SidePanel() {
         />
 
         <label>Portfolio</label>
+
         <input
           value={profile.portfolio}
           onChange={event =>
@@ -441,6 +570,7 @@ function SidePanel() {
         />
 
         <label>Current company</label>
+
         <input
           value={profile.currentCompany}
           onChange={event =>
@@ -452,6 +582,7 @@ function SidePanel() {
         />
 
         <label>Designation</label>
+
         <input
           value={profile.designation}
           onChange={event =>
@@ -463,6 +594,7 @@ function SidePanel() {
         />
 
         <label>Experience years</label>
+
         <input
           value={profile.experienceYears}
           onChange={event =>
@@ -474,6 +606,7 @@ function SidePanel() {
         />
 
         <label>Notice period</label>
+
         <input
           value={profile.noticePeriod}
           onChange={event =>
@@ -485,6 +618,7 @@ function SidePanel() {
         />
 
         <label>Current salary</label>
+
         <input
           value={profile.currentSalary}
           onChange={event =>
@@ -496,6 +630,7 @@ function SidePanel() {
         />
 
         <label>Expected salary</label>
+
         <input
           value={profile.expectedSalary}
           onChange={event =>
@@ -507,6 +642,7 @@ function SidePanel() {
         />
 
         <label>Skills</label>
+
         <textarea
           value={profile.skills}
           onChange={event =>
@@ -518,6 +654,7 @@ function SidePanel() {
         />
 
         <label>Cover letter</label>
+
         <textarea
           value={profile.coverLetter}
           onChange={event =>
@@ -529,6 +666,7 @@ function SidePanel() {
         />
 
         <label>Resume filename</label>
+
         <input
           value={profile.resume}
           readOnly
@@ -544,6 +682,13 @@ function SidePanel() {
 
       <section className="card">
         <h2>Job Form</h2>
+
+        <button
+          className="primary"
+          onClick={applyWithAria}
+        >
+          Apply with ARIA
+        </button>
 
         <button
           className="secondary"
