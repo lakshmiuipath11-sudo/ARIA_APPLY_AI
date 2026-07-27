@@ -1,25 +1,58 @@
-{
-  "name": "aria-apply-ai-extension",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "ARIA Apply AI Chrome Extension",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/chrome": "^0.0.287",
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.0.1",
-    "@types/react-dom": "^19.0.2",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.5"
-  }
-}
+name: Build Chrome Extension
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "extension/**"
+      - ".github/workflows/build-extension.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-extension:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: extension
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Verify extension build
+        run: |
+          test -f dist/manifest.json
+          test -f dist/popup.html
+          test -f dist/sidepanel.html
+          test -f dist/assets/background.js
+          test -f dist/assets/content.js
+
+      - name: Create extension ZIP
+        run: |
+          cd dist
+          zip -r ../aria-apply-ai-extension.zip .
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aria-apply-ai-extension
+          path: extension/aria-apply-ai-extension.zip
+          if-no-files-found: error
+          retention-days: 14
