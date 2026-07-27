@@ -7,25 +7,34 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "allowJs": false,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+
+    "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "allowJs": false,
     "noEmit": true,
-    "jsx": "react-jsx",
+
     "types": [
       "chrome",
       "node"
-    ]
+    ],
+
+    "forceConsistentCasingInFileNames": true
   },
+
   "include": [
     "src",
     "vite.config.ts"
+  ],
+
+  "exclude": [
+    "dist",
+    "node_modules"
   ]
-}s
+}
