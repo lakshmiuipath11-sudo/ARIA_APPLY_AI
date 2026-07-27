@@ -41,7 +41,7 @@ Rules:
 """
 
 
-class OpenAISemanticMapper:
+class GeminiSemanticMapper:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.client = (
