@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from app.core.config import Settings, get_settings
 from app.models.profile import CandidateProfile
 from app.models.semantic import SemanticMapRequest, SemanticMapResponse
-from app.services.openai_mapper import OpenAISemanticMapper
+from app.services.openai_mapper import GeminiSemanticMapper
 from app.services.resume_parser import parse_resume
 
 
