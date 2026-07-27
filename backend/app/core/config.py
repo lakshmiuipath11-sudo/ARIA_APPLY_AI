@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     )
 
     gemini_model: str = Field(
-        default="gemini-2.5-flash",
-        alias="GEMINI_MODEL",
+    default="gemini-3.5-flash",
+    alias="GEMINI_MODEL",
+)
     )
 
     # Keep OpenAI temporarily as a fallback.
