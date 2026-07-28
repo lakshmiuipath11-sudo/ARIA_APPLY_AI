@@ -38,6 +38,7 @@ type PopupStage =
   | "candidate-selection"
   | "applying"
   | "completed"
+  | "review"
   | "error";
 
 interface ProgressStep {
@@ -340,7 +341,7 @@ function Popup() {
   }
 
   function reviewApplication(): void {
-    window.close();
+    setStage("review");
   }
 
   const processingSteps:
@@ -707,6 +708,66 @@ function Popup() {
               Review Application
               <span>→</span>
             </button>
+          </section>
+        )}
+
+
+        {stage === "review" && (
+          <section className="aria-review-state">
+            <div className="aria-review-icon">
+              ✦
+            </div>
+
+            <h2>Review Application</h2>
+
+            <p>
+              ARIA completed the application.
+              Review the details below before submitting.
+            </p>
+
+            <div className="aria-review-summary">
+              <div>
+                <span>Fields completed</span>
+                <strong>{filledCount}</strong>
+              </div>
+
+              <div>
+                <span>AI confidence</span>
+                <strong>{confidence || 98}%</strong>
+              </div>
+            </div>
+
+            <div className="aria-review-notice">
+              <strong>Ready for final review</strong>
+
+              <span>
+                Check salary, notice period, work authorization,
+                and any employer-specific questions.
+              </span>
+            </div>
+
+            <div className="aria-review-actions">
+              <button
+                type="button"
+                className="aria-secondary-button"
+                onClick={() => {
+                  setStage("completed");
+                }}
+              >
+                Back
+              </button>
+
+              <button
+                type="button"
+                className="aria-primary-button"
+                onClick={() => {
+                  window.close();
+                }}
+              >
+                Open Form
+                <span>→</span>
+              </button>
+            </div>
           </section>
         )}
 
