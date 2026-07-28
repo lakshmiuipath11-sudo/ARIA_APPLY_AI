@@ -15,7 +15,8 @@ import {
   addCandidate,
   getCandidates,
   getSelectedCandidate,
-  selectCandidate
+  selectCandidate,
+  updateCandidateMemory
 } from "../storage/candidateProfilesStorage";
 
 import {
@@ -93,6 +94,21 @@ function Popup() {
 
   const [errorMessage, setErrorMessage] =
     useState("");
+
+  const [memoryNoticePeriod, setMemoryNoticePeriod] =
+    useState("");
+
+  const [memoryCurrentSalary, setMemoryCurrentSalary] =
+    useState("");
+
+  const [memoryExpectedSalary, setMemoryExpectedSalary] =
+    useState("");
+
+  const [memoryCoverLetter, setMemoryCoverLetter] =
+    useState("");
+
+  const [memorySaved, setMemorySaved] =
+    useState(false);
 
   const greeting = getGreeting();
 
@@ -341,7 +357,67 @@ function Popup() {
   }
 
   function reviewApplication(): void {
+    const candidate =
+      candidates.find(
+        item =>
+          item.id === selectedCandidateId
+      );
+
+    setMemoryNoticePeriod(
+      candidate?.profile.noticePeriod ?? ""
+    );
+
+    setMemoryCurrentSalary(
+      candidate?.profile.currentSalary ?? ""
+    );
+
+    setMemoryExpectedSalary(
+      candidate?.profile.expectedSalary ?? ""
+    );
+
+    setMemoryCoverLetter(
+      candidate?.profile.coverLetter ?? ""
+    );
+
+    setMemorySaved(false);
     setStage("review");
+  }
+
+  async function saveAriaMemory(): Promise<void> {
+    if (!selectedCandidateId) {
+      showError(
+        "Choose a candidate profile before saving ARIA Memory."
+      );
+      return;
+    }
+
+    try {
+      await updateCandidateMemory(
+        selectedCandidateId,
+        {
+          noticePeriod:
+            memoryNoticePeriod.trim(),
+          currentSalary:
+            memoryCurrentSalary.trim(),
+          expectedSalary:
+            memoryExpectedSalary.trim(),
+          coverLetter:
+            memoryCoverLetter.trim()
+        }
+      );
+
+      const refreshedCandidates =
+        await getCandidates();
+
+      setCandidates(refreshedCandidates);
+      setMemorySaved(true);
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? error.message
+          : "ARIA could not save these profile details."
+      );
+    }
   }
 
   const processingSteps:
@@ -721,8 +797,8 @@ function Popup() {
             <h2>Review Application</h2>
 
             <p>
-              ARIA completed the application.
-              Review the details below before submitting.
+              Review the application and save reusable details
+              to this candidate's ARIA Memory.
             </p>
 
             <div className="aria-review-summary">
@@ -737,12 +813,90 @@ function Popup() {
               </div>
             </div>
 
+            <div className="aria-memory-form">
+              <label>
+                <span>Notice Period</span>
+                <input
+                  type="text"
+                  value={memoryNoticePeriod}
+                  placeholder="Example: 30 days"
+                  onChange={event => {
+                    setMemoryNoticePeriod(
+                      event.target.value
+                    );
+                    setMemorySaved(false);
+                  }}
+                />
+              </label>
+
+              <label>
+                <span>Current Salary</span>
+                <input
+                  type="text"
+                  value={memoryCurrentSalary}
+                  placeholder="Example: $85,000"
+                  onChange={event => {
+                    setMemoryCurrentSalary(
+                      event.target.value
+                    );
+                    setMemorySaved(false);
+                  }}
+                />
+              </label>
+
+              <label>
+                <span>Expected Salary</span>
+                <input
+                  type="text"
+                  value={memoryExpectedSalary}
+                  placeholder="Example: $100,000"
+                  onChange={event => {
+                    setMemoryExpectedSalary(
+                      event.target.value
+                    );
+                    setMemorySaved(false);
+                  }}
+                />
+              </label>
+
+              <label>
+                <span>Reusable Cover Letter</span>
+                <textarea
+                  value={memoryCoverLetter}
+                  placeholder="Optional reusable introduction"
+                  rows={4}
+                  onChange={event => {
+                    setMemoryCoverLetter(
+                      event.target.value
+                    );
+                    setMemorySaved(false);
+                  }}
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              className="aria-primary-button aria-memory-save-button"
+              onClick={() => {
+                void saveAriaMemory();
+              }}
+            >
+              {memorySaved
+                ? "✓ Saved to ARIA Memory"
+                : "Save to ARIA Memory"}
+            </button>
+
             <div className="aria-review-notice">
-              <strong>Ready for final review</strong>
+              <strong>
+                {memorySaved
+                  ? "ARIA Memory updated"
+                  : "Ready for final review"}
+              </strong>
 
               <span>
-                Check salary, notice period, work authorization,
-                and any employer-specific questions.
+                Saved details stay with this candidate profile
+                and can be reused on future applications.
               </span>
             </div>
 
