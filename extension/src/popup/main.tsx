@@ -494,26 +494,24 @@ function Popup() {
         )}
 
         {stage === "processing" && (
-          <>
-            <AgentProgress
-              steps={processingSteps}
-              confidence={
-                totalFiles > 0
-                  ? Math.round(
-                      (
-                        processedCount /
-                        totalFiles
-                      ) * 100
-                    )
-                  : 0
-              }
-              message={
-                totalFiles > 1
-                  ? `Processed ${processedCount} of ${totalFiles} resumes`
-                  : "ARIA is preparing the candidate profile..."
-              }
-            />
-          </>
+          <AgentProgress
+            steps={processingSteps}
+            confidence={
+              totalFiles > 0
+                ? Math.round(
+                    (
+                      processedCount /
+                      totalFiles
+                    ) * 100
+                  )
+                : 0
+            }
+            message={
+              totalFiles > 1
+                ? `Processed ${processedCount} of ${totalFiles} resumes`
+                : "ARIA is preparing the candidate profile..."
+            }
+          />
         )}
 
         {stage === "setup-complete" && (
@@ -660,22 +658,46 @@ function Popup() {
             <h2>Application Ready!</h2>
 
             <p>
-              The selected candidate’s
-              application has been completed.
+              ARIA successfully completed the job application using the selected
+              candidate profile.
             </p>
 
-            <div className="aria-confidence-card">
-              <span>AI Confidence</span>
+            <div className="aria-success-summary">
+              <div className="aria-summary-card">
+                <span>Fields Filled</span>
+                <strong>{filledCount}</strong>
+              </div>
 
-              <strong>
-                {confidence || 98}%
-              </strong>
+              <div className="aria-summary-card">
+                <span>AI Confidence</span>
+                <strong>{confidence || 98}%</strong>
+              </div>
+            </div>
+
+            <div className="aria-success-checklist">
+              <div className="aria-check-item">
+                <span>✓</span>
+                Resume Parsed
+              </div>
+
+              <div className="aria-check-item">
+                <span>✓</span>
+                Candidate Profile Loaded
+              </div>
+
+              <div className="aria-check-item">
+                <span>✓</span>
+                Gemini Semantic Mapping Complete
+              </div>
+
+              <div className="aria-check-item">
+                <span>✓</span>
+                Job Application Autofilled
+              </div>
             </div>
 
             <p className="aria-completion-note">
-              {filledCount > 0
-                ? "No issues detected."
-                : "Please review the completed form."}
+              Please review the application before submitting it.
             </p>
 
             <button
