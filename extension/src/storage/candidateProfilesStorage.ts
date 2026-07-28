@@ -9,6 +9,13 @@ const SELECTED_CANDIDATE_KEY =
 const SETUP_COMPLETE_KEY =
   "ariaSetupComplete";
 
+const MEMORY_FIELDS: Array<keyof CandidateProfile> = [
+  "noticePeriod",
+  "currentSalary",
+  "expectedSalary",
+  "coverLetter"
+];
+
 function normalizeName(
   profile: CandidateProfile,
   resumeFileName: string
@@ -30,11 +37,14 @@ function normalizeName(
     return combinedName;
   }
 
-  return resumeFileName
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim() || "ARIA Candidate";
+  return (
+    resumeFileName
+      .replace(/\.[^.]+$/, "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim() ||
+    "ARIA Candidate"
+  );
 }
 
 function createInitials(
@@ -59,6 +69,40 @@ function createInitials(
     words[0][0] +
     words[words.length - 1][0]
   ).toUpperCase();
+}
+
+function cleanProfileValue(
+  value: unknown
+): string {
+  return typeof value === "string"
+    ? value.trim()
+    : "";
+}
+
+function preserveCandidateMemory(
+  currentProfile: CandidateProfile,
+  incomingProfile: CandidateProfile
+): CandidateProfile {
+  const mergedProfile: CandidateProfile = {
+    ...currentProfile,
+    ...incomingProfile
+  };
+
+  for (const field of MEMORY_FIELDS) {
+    const incomingValue = cleanProfileValue(
+      incomingProfile[field]
+    );
+
+    const currentValue = cleanProfileValue(
+      currentProfile[field]
+    );
+
+    mergedProfile[field] = (
+      incomingValue || currentValue
+    ) as never;
+  }
+
+  return mergedProfile;
 }
 
 export async function getCandidates():
@@ -169,10 +213,6 @@ export async function addCandidate(
     [SETUP_COMPLETE_KEY]: true
   });
 
-  /*
-   * Automatically select the first
-   * candidate stored in ARIA.
-   */
   if (updatedCandidates.length === 1) {
     await chrome.storage.local.set({
       [SELECTED_CANDIDATE_KEY]:
@@ -210,9 +250,15 @@ export async function updateCandidate(
     resumeFileName ||
     current.resumeFileName;
 
+  const mergedProfile =
+    preserveCandidateMemory(
+      current.profile,
+      profile
+    );
+
   const displayName =
     normalizeName(
-      profile,
+      mergedProfile,
       finalResumeName
     );
 
@@ -227,9 +273,9 @@ export async function updateCandidate(
     updatedAt:
       new Date().toISOString(),
     profile: {
-      ...profile,
+      ...mergedProfile,
       resume:
-        profile.resume ||
+        mergedProfile.resume ||
         finalResumeName
     }
   };
@@ -247,6 +293,43 @@ export async function updateCandidate(
   });
 
   return updatedCandidate;
+}
+
+export async function updateCandidateMemory(
+  candidateId: string,
+  memory: Partial<CandidateProfile>
+): Promise<StoredCandidate> {
+  const candidate =
+    await getCandidateById(candidateId);
+
+  if (!candidate) {
+    throw new Error(
+      "Candidate profile not found."
+    );
+  }
+
+  const memoryUpdate:
+  Partial<CandidateProfile> = {};
+
+  for (const field of MEMORY_FIELDS) {
+    const value = cleanProfileValue(
+      memory[field]
+    );
+
+    if (value) {
+      memoryUpdate[field] =
+        value as never;
+    }
+  }
+
+  return updateCandidate(
+    candidateId,
+    {
+      ...candidate.profile,
+      ...memoryUpdate
+    },
+    candidate.resumeFileName
+  );
 }
 
 export async function deleteCandidate(
