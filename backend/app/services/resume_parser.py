@@ -87,6 +87,7 @@ KNOWN_SKILLS = [
     "GitHub",
     "Railway",
     "OpenAI",
+    "Gemini",
     "LangGraph",
     "Power Automate",
     "Power Platform",
@@ -105,6 +106,60 @@ KNOWN_SKILLS = [
 ]
 
 
+JOB_TITLE_PATTERNS = [
+    "Senior Intelligent Automation Architect",
+    "Intelligent Automation Architect",
+    "Solution Architect",
+    "Technical Architect",
+    "Automation Architect",
+    "Technical Lead",
+    "Team Lead",
+    "Project Lead",
+    "Senior Consultant",
+    "Consultant",
+    "Senior Developer",
+    "Software Developer",
+    "UiPath Developer",
+    "RPA Developer",
+    "Python Developer",
+    "Software Engineer",
+    "Automation Engineer",
+    "RPA Engineer",
+    "Business Analyst",
+    "Data Analyst",
+    "Project Manager",
+    "Program Manager",
+    "Manager",
+    "Architect",
+    "Developer",
+    "Engineer",
+    "Analyst",
+]
+
+
+COMPANY_SUFFIXES = (
+    "limited",
+    "ltd",
+    "ltd.",
+    "private limited",
+    "pvt ltd",
+    "pvt. ltd.",
+    "inc",
+    "inc.",
+    "llc",
+    "corporation",
+    "corp",
+    "corp.",
+    "technologies",
+    "technology",
+    "solutions",
+    "services",
+    "systems",
+    "consulting",
+    "consultancy",
+)
+
+
 def clean_text(value: str | None) -> str:
     """Normalize whitespace and remove null characters."""
     if not value:
@@ -118,7 +173,7 @@ def clean_text(value: str | None) -> str:
 
 
 def normalize_heading(value: str) -> str:
-    """Convert text into a comparable heading format."""
+    """Convert text into a comparable uppercase heading."""
     normalized = re.sub(
         r"[^A-Za-z ]+",
         " ",
@@ -128,8 +183,17 @@ def normalize_heading(value: str) -> str:
     return clean_text(normalized).upper()
 
 
+def text_lines(text: str) -> list[str]:
+    """Return non-empty resume lines with normalized whitespace."""
+    return [
+        clean_text(line)
+        for line in text.splitlines()
+        if clean_text(line)
+    ]
+
+
 def is_invalid_name(value: str) -> bool:
-    """Return True when the value looks like a resume heading."""
+    """Return True when a value looks like a resume section heading."""
     normalized = normalize_heading(value)
 
     if not normalized:
@@ -172,24 +236,24 @@ def extract_pdf_text(content: bytes) -> str:
 
 
 def extract_docx_text(content: bytes) -> str:
-    """Extract text from paragraphs and tables in a DOCX resume."""
+    """Extract text from DOCX paragraphs and tables."""
     document = Document(io.BytesIO(content))
 
     values: list[str] = []
 
     for paragraph in document.paragraphs:
-        text = clean_text(paragraph.text)
+        value = clean_text(paragraph.text)
 
-        if text:
-            values.append(text)
+        if value:
+            values.append(value)
 
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
-                text = clean_text(cell.text)
+                value = clean_text(cell.text)
 
-                if text:
-                    values.append(text)
+                if value:
+                    values.append(value)
 
     return "\n".join(values)
 
@@ -198,7 +262,7 @@ def extract_text(
     filename: str,
     content: bytes,
 ) -> str:
-    """Extract text based on the uploaded resume extension."""
+    """Extract text based on the resume file extension."""
     extension = Path(filename).suffix.lower()
 
     if extension not in SUPPORTED_EXTENSIONS:
@@ -232,7 +296,7 @@ def first_match(
     text: str,
     flags: int = re.IGNORECASE,
 ) -> str:
-    """Return the first captured group from a regex match."""
+    """Return the first regex capture group."""
     match = re.search(
         pattern,
         text,
@@ -245,17 +309,19 @@ def first_match(
     return clean_text(match.group(1))
 
 
-def remove_trailing_punctuation(value: str) -> str:
+def remove_trailing_punctuation(
+    value: str,
+) -> str:
     return value.rstrip(".,;:|)]}>")
 
 
 def extract_email(text: str) -> str:
-    return remove_trailing_punctuation(
-        first_match(
-            r"\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b",
-            text,
-        )
+    value = first_match(
+        r"\b([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\b",
+        text,
     )
+
+    return remove_trailing_punctuation(value)
 
 
 def extract_phone(text: str) -> str:
@@ -377,17 +443,16 @@ def candidate_name_from_filename(
     if not usable_tokens:
         return ""
 
-    # Usually the first one to three usable filename words represent the name.
-    usable_tokens = usable_tokens[:3]
-
     return " ".join(
         word.capitalize()
-        for word in usable_tokens
+        for word in usable_tokens[:3]
     )
 
 
-def looks_like_person_name(value: str) -> bool:
-    """Validate whether a line could reasonably be a person's name."""
+def looks_like_person_name(
+    value: str,
+) -> bool:
+    """Validate whether a line could represent a person's name."""
     cleaned = clean_text(value)
 
     if not cleaned:
@@ -396,18 +461,27 @@ def looks_like_person_name(value: str) -> bool:
     if is_invalid_name(cleaned):
         return False
 
+    lowered = cleaned.lower()
+
+    invalid_markers = (
+        "@",
+        "http://",
+        "https://",
+        "linkedin",
+        "github",
+        "phone",
+        "mobile",
+        "email",
+        "summary",
+        "experience",
+        "objective",
+        "skills",
+        "education",
+    )
+
     if any(
-        marker in cleaned.lower()
-        for marker in (
-            "@",
-            "http://",
-            "https://",
-            "linkedin",
-            "github",
-            "phone",
-            "mobile",
-            "email",
-        )
+        marker in lowered
+        for marker in invalid_markers
     ):
         return False
 
@@ -429,15 +503,12 @@ def looks_like_person_name(value: str) -> bool:
     return True
 
 
-def extract_name_from_text(text: str) -> str:
+def extract_name_from_text(
+    text: str,
+) -> str:
     """Search early resume lines for a valid candidate name."""
-    lines = [
-        clean_text(line)
-        for line in text.splitlines()
-        if clean_text(line)
-    ]
+    lines = text_lines(text)
 
-    # Candidate names normally occur near the start of a resume.
     for line in lines[:30]:
         if looks_like_person_name(line):
             return line
@@ -474,7 +545,7 @@ def extract_name(
     filename: str,
 ) -> tuple[str, str, str]:
     """
-    Resolve the candidate name.
+    Resolve candidate name.
 
     Priority:
     1. Valid name near the beginning of the resume.
@@ -517,45 +588,206 @@ def extract_labeled_value(
     return first_match(pattern, text)
 
 
+def clean_profile_value(
+    value: str,
+) -> str:
+    """Clean extracted profile values and reject obvious headings."""
+    cleaned = clean_text(value)
+
+    cleaned = re.sub(
+        r"\s{2,}",
+        " ",
+        cleaned,
+    )
+
+    cleaned = cleaned.strip(
+        " -–—:;,|"
+    )
+
+    if not cleaned:
+        return ""
+
+    normalized = normalize_heading(cleaned)
+
+    invalid_values = {
+        "WORK EXPERIENCE",
+        "PROFESSIONAL EXPERIENCE",
+        "EMPLOYMENT HISTORY",
+        "CURRENT COMPANY",
+        "CURRENT EMPLOYER",
+        "CURRENT DESIGNATION",
+        "CURRENT ROLE",
+        "JOB TITLE",
+        "DESIGNATION",
+    }
+
+    if normalized in invalid_values:
+        return ""
+
+    return cleaned
+
+
 def extract_city(text: str) -> str:
-    return extract_labeled_value(
-        [
-            "City",
-            "Current City",
-            "Current Location",
-            "Location",
-        ],
-        text,
+    return clean_profile_value(
+        extract_labeled_value(
+            [
+                "Current City",
+                "Current Location",
+                "City",
+                "Location",
+            ],
+            text,
+        )
     )
 
 
 def extract_country(text: str) -> str:
-    return extract_labeled_value(
-        [
-            "Country",
-            "Nationality",
-        ],
-        text,
+    return clean_profile_value(
+        extract_labeled_value(
+            [
+                "Country",
+                "Nationality",
+            ],
+            text,
+        )
     )
 
 
-def extract_current_company(text: str) -> str:
-    value = extract_labeled_value(
+def looks_like_company_name(
+    value: str,
+) -> bool:
+    cleaned = clean_profile_value(value)
+
+    if not cleaned:
+        return False
+
+    lowered = cleaned.lower()
+
+    if len(cleaned) > 100:
+        return False
+
+    if any(
+        heading.lower() == lowered
+        for heading in INVALID_NAME_HEADINGS
+    ):
+        return False
+
+    if any(
+        suffix in lowered
+        for suffix in COMPANY_SUFFIXES
+    ):
+        return True
+
+    words = cleaned.split()
+
+    return (
+        1 <= len(words) <= 8
+        and not re.search(
+            r"\b(?:years?|months?|responsibilities|project|skills)\b",
+            lowered,
+        )
+    )
+
+
+def extract_current_company(
+    text: str,
+) -> str:
+    """Extract the current or most recent employer."""
+    labeled_value = extract_labeled_value(
         [
             "Current Company",
             "Current Employer",
             "Present Company",
             "Present Employer",
             "Organization",
+            "Employer",
+            "Company",
         ],
         text,
     )
 
-    return value
+    labeled_value = clean_profile_value(
+        labeled_value
+    )
+
+    if looks_like_company_name(
+        labeled_value
+    ):
+        return labeled_value
+
+    lines = text_lines(text)
+
+    at_patterns = [
+        (
+            r"\b(?:working|currently working|employed)"
+            r"\s+(?:with|at)\s+(.+)$"
+        ),
+        (
+            r"\b(?:architect|developer|engineer|consultant|manager|lead)"
+            r"\s+(?:with|at)\s+(.+)$"
+        ),
+    ]
+
+    for line in lines:
+        for pattern in at_patterns:
+            match = re.search(
+                pattern,
+                line,
+                re.IGNORECASE,
+            )
+
+            if not match:
+                continue
+
+            candidate = clean_profile_value(
+                match.group(1)
+            )
+
+            candidate = re.split(
+                r"\s+(?:since|from)\s+",
+                candidate,
+                maxsplit=1,
+                flags=re.IGNORECASE,
+            )[0]
+
+            if looks_like_company_name(candidate):
+                return candidate
+
+    experience_headings = {
+        "WORK EXPERIENCE",
+        "PROFESSIONAL EXPERIENCE",
+        "EMPLOYMENT HISTORY",
+        "EXPERIENCE",
+    }
+
+    for index, line in enumerate(lines):
+        if normalize_heading(line) not in experience_headings:
+            continue
+
+        for nearby_line in lines[
+            index + 1:index + 12
+        ]:
+            candidate = clean_profile_value(
+                nearby_line
+            )
+
+            if any(
+                title.lower() in candidate.lower()
+                for title in JOB_TITLE_PATTERNS
+            ):
+                continue
+
+            if looks_like_company_name(candidate):
+                return candidate
+
+    return ""
 
 
-def extract_designation(text: str) -> str:
-    return extract_labeled_value(
+def extract_designation(
+    text: str,
+) -> str:
+    """Extract current or most recent job title."""
+    labeled_value = extract_labeled_value(
         [
             "Current Designation",
             "Current Role",
@@ -563,29 +795,87 @@ def extract_designation(text: str) -> str:
             "Designation",
             "Job Title",
             "Role",
+            "Position",
         ],
         text,
     )
 
+    labeled_value = clean_profile_value(
+        labeled_value
+    )
 
-def extract_experience_years(text: str) -> str:
+    if labeled_value:
+        return labeled_value
+
+    lines = text_lines(text)
+
+    for line in lines:
+        normalized_line = clean_profile_value(
+            line
+        )
+
+        if not normalized_line:
+            continue
+
+        for title in JOB_TITLE_PATTERNS:
+            match = re.search(
+                rf"\b{re.escape(title)}\b",
+                normalized_line,
+                re.IGNORECASE,
+            )
+
+            if not match:
+                continue
+
+            before_title = normalized_line[
+                :match.start()
+            ].strip()
+
+            if (
+                before_title
+                and len(before_title.split()) > 5
+            ):
+                continue
+
+            return match.group(0)
+
+    return ""
+
+
+def extract_experience_years(
+    text: str,
+) -> str:
+    """Extract total years of professional experience."""
     patterns = [
         (
-            r"(\d{1,2}(?:\.\d+)?)\+?"
-            r"\s*(?:years?|yrs?)"
-            r"\s+(?:of\s+)?"
-            r"(?:total\s+)?experience"
-        ),
-        (
-            r"(?:total\s+)?experience"
+            r"(?:total\s+)?(?:professional\s+)?experience"
             r"\s*[:\-]?\s*"
             r"(\d{1,2}(?:\.\d+)?)\+?"
             r"\s*(?:years?|yrs?)"
         ),
         (
-            r"professional\s+with\s+"
             r"(\d{1,2}(?:\.\d+)?)\+?"
             r"\s*(?:years?|yrs?)"
+            r"\s+(?:of\s+)?"
+            r"(?:total\s+)?"
+            r"(?:professional\s+)?experience"
+        ),
+        (
+            r"(?:over|more\s+than|around|approximately)"
+            r"\s+(\d{1,2}(?:\.\d+)?)\+?"
+            r"\s*(?:years?|yrs?)"
+            r"(?:\s+of)?\s+experience"
+        ),
+        (
+            r"(?:professional|specialist|architect|developer|engineer)"
+            r"\s+with\s+"
+            r"(\d{1,2}(?:\.\d+)?)\+?"
+            r"\s*(?:years?|yrs?)"
+        ),
+        (
+            r"(\d{1,2}(?:\.\d+)?)\+?"
+            r"\s*(?:years?|yrs?)"
+            r"\s+in\s+(?:it|software|automation|technology)"
         ),
     ]
 
@@ -601,40 +891,53 @@ def extract_experience_years(text: str) -> str:
     return ""
 
 
-def extract_notice_period(text: str) -> str:
-    return extract_labeled_value(
-        [
-            "Notice Period",
-            "Availability",
-            "Available From",
-        ],
-        text,
+def extract_notice_period(
+    text: str,
+) -> str:
+    return clean_profile_value(
+        extract_labeled_value(
+            [
+                "Notice Period",
+                "Availability",
+                "Available From",
+            ],
+            text,
+        )
     )
 
 
-def extract_current_salary(text: str) -> str:
-    return extract_labeled_value(
-        [
-            "Current Salary",
-            "Current CTC",
-            "Current Compensation",
-        ],
-        text,
+def extract_current_salary(
+    text: str,
+) -> str:
+    return clean_profile_value(
+        extract_labeled_value(
+            [
+                "Current Salary",
+                "Current CTC",
+                "Current Compensation",
+            ],
+            text,
+        )
     )
 
 
-def extract_expected_salary(text: str) -> str:
-    return extract_labeled_value(
-        [
-            "Expected Salary",
-            "Expected CTC",
-            "Expected Compensation",
-        ],
-        text,
+def extract_expected_salary(
+    text: str,
+) -> str:
+    return clean_profile_value(
+        extract_labeled_value(
+            [
+                "Expected Salary",
+                "Expected CTC",
+                "Expected Compensation",
+            ],
+            text,
+        )
     )
 
 
 def extract_skills(text: str) -> str:
+    """Extract known skills without returning duplicates."""
     found: list[str] = []
 
     for skill in KNOWN_SKILLS:
@@ -657,7 +960,7 @@ def parse_resume(
     """
     Parse an uploaded resume and return a CandidateProfile.
 
-    This function does not invent missing values.
+    Missing values remain empty. The parser does not invent information.
     """
     text = extract_text(
         filename=filename,
