@@ -69,9 +69,9 @@ export interface CandidateProfile {
   skills: string;
   coverLetter: string;
 
-  // Sprint 4
   resume: string;
 }
+
 export interface StoredCandidate {
   id: string;
   displayName: string;
