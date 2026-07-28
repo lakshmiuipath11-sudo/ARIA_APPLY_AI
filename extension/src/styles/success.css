@@ -1,54 +1,132 @@
-.aria-success-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 18px 0;
+.aria-success-summary{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin:20px 0;
 }
 
-.aria-summary-card {
-  padding: 14px 10px;
-  border: 1px solid rgba(129, 140, 248, 0.28);
-  border-radius: 14px;
-  text-align: center;
-  background: rgba(15, 32, 55, 0.78);
+.aria-summary-card{
+    padding:16px;
+    border-radius:14px;
+    border:1px solid rgba(99,102,241,.25);
+    background:rgba(15,23,42,.78);
+    text-align:center;
+    box-shadow:0 8px 20px rgba(0,0,0,.15);
 }
 
-.aria-summary-card span {
-  display: block;
-  margin-bottom: 6px;
-  color: #94a3b8;
-  font-size: 11px;
+.aria-summary-card span{
+    display:block;
+    margin-bottom:8px;
+    color:#94a3b8;
+    font-size:12px;
 }
 
-.aria-summary-card strong {
-  color: #ffffff;
-  font-size: 25px;
+.aria-summary-card strong{
+    color:#fff;
+    font-size:28px;
+    font-weight:700;
 }
 
-.aria-success-checklist {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0 20px;
+.aria-success-checklist{
+    display:grid;
+    gap:10px;
+    margin:18px 0 24px;
 }
 
-.aria-check-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 12px;
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: 10px;
-  color: #dfffea;
-  font-size: 12px;
-  background: rgba(20, 83, 45, 0.2);
+.aria-check-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid rgba(34,197,94,.25);
+    background:rgba(20,83,45,.18);
+    color:#dcfce7;
+    font-size:14px;
 }
 
-.aria-check-item span {
-  display: grid;
-  width: 20px;
-  height: 20px;
-  place-items: center;
-  border-radius: 50%;
-  color: #ffffff;
-  background: #22c55e;
+.aria-check-item span{
+    width:22px;
+    height:22px;
+    display:grid;
+    place-items:center;
+    border-radius:50%;
+    background:#22c55e;
+    color:#fff;
+    font-weight:700;
 }
+
+.aria-review-state{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    text-align:center;
+}
+
+.aria-review-icon{
+    width:60px;
+    height:60px;
+    margin:0 auto;
+    display:grid;
+    place-items:center;
+    border-radius:18px;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    color:#fff;
+    font-size:28px;
+}
+
+.aria-review-summary{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.aria-review-summary div{
+    padding:14px;
+    border-radius:12px;
+    border:1px solid rgba(99,102,241,.25);
+    background:rgba(15,23,42,.78);
+}
+
+.aria-review-summary span{
+    display:block;
+    color:#94a3b8;
+    font-size:12px;
+    margin-bottom:6px;
+}
+
+.aria-review-summary strong{
+    color:#fff;
+    font-size:24px;
+}
+
+.aria-review-notice{
+    padding:14px;
+    border-radius:12px;
+    border:1px solid rgba(245,158,11,.3);
+    background:rgba(120,53,15,.18);
+    color:#fde68a;
+    text-align:left;
+}
+
+.aria-review-notice span{
+    display:block;
+    margin-top:6px;
+    color:#e5e7eb;
+    font-size:12px;
+}
+
+.aria-review-actions{
+    display:grid;
+    grid-template-columns:1fr 1.5fr;
+    gap:10px;
+}
+
+.aria-secondary-button{
+    min-height:46px;
+    border-radius:12px;
+    border:1px solid #475569;
+    background:#1e293b;
+    color:#fff;
+    font-weight:600;
+    cursor:pointer;
